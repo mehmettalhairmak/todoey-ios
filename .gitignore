@@ -1,0 +1,30 @@
+# Xcode
+#
+# User-specific Xcode settings
+xcuserdata/
+
+# Build products
+build/
+DerivedData/
+
+# Pods
+Pods/
+*.xcworkspace
+
+# SPM
+# Add this section if you're using Swift Package Manager (SPM)
+# Package.resolved
+
+# Swift Package Manager
+# Add this section if you're using Swift Package Manager (SPM)
+# .swiftpm/
+
+# Carthage
+# Add this section if you're using Carthage for dependency management
+# /Carthage
+
+# fastlane
+# Add this section if you're using fastlane to automate your builds
+# fastlane/report.xml
+# fastlane/Preview.html
+# fastlane/screenshots/**/*.png
