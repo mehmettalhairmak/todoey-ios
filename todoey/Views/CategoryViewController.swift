@@ -6,32 +6,37 @@
 //
 
 import UIKit
-import RealmSwift
 
-class CategoryViewController: SwipeTableViewController  {
-    let realm = try! Realm()
-    var categories: Results<Category>?
+protocol CategoryViewInterface: AnyObject {
+    func prepareCategoryView()
+    func reloadData()
+}
+
+final class CategoryViewController: SwipeTableViewController {
+    private lazy var viewModel = CategoryViewModel()
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        loadCategories()
+        viewModel.view = self
+        viewModel.viewDidLoad()
     }
     
     //MARK: - TableView DataSource Methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categories?.count ?? 1
+        return viewModel.numberOfRowsInSection()
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
+        //move VM
         if #available(iOS 14.0, *) {
             var content = cell.defaultContentConfiguration()
-            content.text = categories?[indexPath.row].name ?? "No Categories Added Yet"
+            content.text = viewModel.cellForRowAtTextProperty(at: indexPath)
             cell.selectionStyle = .none
             cell.contentConfiguration = content
         } else {
-            cell.textLabel?.text = categories?[indexPath.row].name ?? "No Categories Added Yet"
+            cell.textLabel?.text = viewModel.cellForRowAtTextProperty(at: indexPath)
         }
         
         return cell
@@ -43,35 +48,24 @@ class CategoryViewController: SwipeTableViewController  {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        let destinationVC = segue.destination as! TodoListViewController
-        
-        if let indexPath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categories?[indexPath.row]
+        if let destinationVC = segue.destination as? TodoListViewController {
+            if let indexPath = tableView.indexPathForSelectedRow {
+                destinationVC.selectedCategory = viewModel.getSelectedCategory(at: indexPath)
+            }
         }
     }
     
     //MARK: - Delete Category from Swipe
     override func updateModel(at indexPath: IndexPath) {
-        if let item = self.categories?[indexPath.row] {
-            do {
-                try self.realm.write {
-                    self.realm.delete(item)
-                }
-            } catch {
-                print("Error deleting category, \(error)")
-            }
-        }
+        viewModel.updateModel(at: indexPath)
     }
     
     //MARK: - Add New Categories
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         var textField = UITextField()
         let alert = UIAlertController(title: "Add New Category", message: "" , preferredStyle: .alert)
-        let action = UIAlertAction(title: "Add", style: .default) { action in
-            let newCategory = Category()
-            newCategory.name = textField.text!
-            
-            self.save(category: newCategory)
+        let action = UIAlertAction(title: "Add", style: .default) { [weak self] action in
+            self?.viewModel.addCategory(newCategoryName: textField.text!)
         }
         
         alert.addAction(action)
@@ -82,21 +76,14 @@ class CategoryViewController: SwipeTableViewController  {
         
         present(alert, animated: true, completion: nil)
     }
-    
-    //MARK: - Data Manipulation Methods
-    func save(category: Category) {
-        do {
-            try realm.write {
-                realm.add(category)
-            }
-        } catch {
-            print("Error saving category, \(error)")
-        }
+}
+
+extension CategoryViewController: CategoryViewInterface {
+    func prepareCategoryView() {
         
-        tableView.reloadData()
     }
     
-    func loadCategories() {
-        categories = realm.objects(Category.self)
+    func reloadData() {
+        tableView.reloadData()
     }
 }
