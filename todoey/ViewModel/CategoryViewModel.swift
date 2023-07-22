@@ -18,6 +18,7 @@ protocol CategoryViewModelInterface {
     func updateModel(at indexPath: IndexPath)
     func addCategory(newCategoryName: String)
 }
+
 final class CategoryViewModel {
     weak var view: CategoryViewInterface?
     
