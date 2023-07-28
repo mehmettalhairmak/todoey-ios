@@ -10,31 +10,30 @@ import RealmSwift
 
 class TodoListViewController: SwipeTableViewController {
     
-    var todoItems: Results<Item>?
-    let realm = try! Realm()
-    var selectedCategory: Category? {
+    var viewModel: TodoListViewModel! {
         didSet {
-            loadItems()
+            viewModel.view = self
         }
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        viewModel.viewDidLoad()
     }
     
     override func viewWillAppear(_ animated: Bool) {
-        navigationItem.title = selectedCategory!.name
+        navigationItem.title = viewModel.selectedCategory?.name
     }
     
     //MARK: - TableView DataSource Methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return todoItems?.count ?? 1
+        return viewModel.todoItems?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
-        if let item = todoItems?[indexPath.row] {
+        if let item = viewModel.todoItems?[indexPath.row] {
             if #available(iOS 14.0, *) {
                 var content = cell.defaultContentConfiguration()
                 content.text = item.title
@@ -59,16 +58,7 @@ class TodoListViewController: SwipeTableViewController {
     
     //MARK: - TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if let item = todoItems?[indexPath.row] {
-            do {
-                try realm.write {
-                    item.done = !item.done
-                }
-            } catch {
-                print("Error saving done status, \(error)")
-            }
-        }
-        tableView.reloadData()
+        viewModel.didSelectRowAt(at: indexPath)
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -78,22 +68,9 @@ class TodoListViewController: SwipeTableViewController {
         
         var textField = UITextField()
         
-        let action = UIAlertAction(title: "Add Item", style: .default) { action in
+        let action = UIAlertAction(title: "Add Item", style: .default) { [weak self] action in
             //What will happend once the user clicks the Add Item button on our UIAlert
-            if let currentCategory = self.selectedCategory {
-                do {
-                    try self.realm.write {
-                        let newItem = Item()
-                        newItem.title = textField.text!
-                        newItem.dateCreated = Date()
-                        currentCategory.items.append(newItem)
-                    }
-                } catch {
-                    print("Error saving new items, \(error)")
-                }
-            }
-            
-            self.tableView.reloadData()
+            self?.viewModel.addTodoItem(itemName: textField.text!)
         }
         
         alert.addTextField { alertTextField in
@@ -108,35 +85,19 @@ class TodoListViewController: SwipeTableViewController {
     
     //MARK: - Delete Item from Swipe
     override func updateModel(at indexPath: IndexPath) {
-        if let item = self.todoItems?[indexPath.row] {
-            do {
-                try self.realm.write {
-                    self.realm.delete(item)
-                }
-            } catch {
-                print("Error deleting item , \(error)")
-            }
-        }
-    }
-    
-    //MARK: - Model Manupilation Methods
-    func loadItems() {
-        todoItems = selectedCategory?.items.sorted(byKeyPath: "dateCreated", ascending: false)
-        
-        tableView.reloadData()
+        viewModel.updateModel(at: indexPath)
     }
 }
 
 //MARK: - SearchBar Methods
 extension TodoListViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        todoItems = todoItems?.filter("title CONTAINS[cd] %@", searchBar.text!).sorted(byKeyPath: "dateCreated", ascending: false)
-        tableView.reloadData()
+        viewModel.searchBarSearchButtonClicked(params: searchBar.text!)
     }
     
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchBar.text?.count == 0 {
-            loadItems()
+            viewModel.loadItems()
             
             DispatchQueue.main.async {
                 searchBar.resignFirstResponder()
@@ -145,3 +106,12 @@ extension TodoListViewController: UISearchBarDelegate {
     }
 }
 
+extension TodoListViewController: TodoListViewInterface {
+    func prepareTodoListView() {
+        
+    }
+    
+    func reloadData() {
+        tableView.reloadData()
+    }
+}

@@ -7,13 +7,8 @@
 
 import UIKit
 
-protocol CategoryViewInterface: AnyObject {
-    func prepareCategoryView()
-    func reloadData()
-}
-
 final class CategoryViewController: SwipeTableViewController {
-    private lazy var viewModel = CategoryViewModel()
+    var viewModel = CategoryViewModel()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -44,16 +39,14 @@ final class CategoryViewController: SwipeTableViewController {
     
     //MARK: - TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        performSegue(withIdentifier: "goToItems", sender: self)
+        let item = viewModel.getSelectedCategory(at: indexPath)
+        
+        let viewModel = TodoListViewModel(selectedCategory: item)
+        
+        let viewController = TodoListViewBuilder.make(viewModel)
+        navigationController?.pushViewController(viewController, animated: true)
     }
     
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if let destinationVC = segue.destination as? TodoListViewController {
-            if let indexPath = tableView.indexPathForSelectedRow {
-                destinationVC.selectedCategory = viewModel.getSelectedCategory(at: indexPath)
-            }
-        }
-    }
     
     //MARK: - Delete Category from Swipe
     override func updateModel(at indexPath: IndexPath) {

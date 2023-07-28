@@ -8,17 +8,6 @@
 import Foundation
 import RealmSwift
 
-protocol CategoryViewModelInterface {
-    var view: CategoryViewInterface? { get set }
-    
-    func viewDidLoad()
-    func numberOfRowsInSection() -> Int
-    func cellForRowAtTextProperty(at indexPath: IndexPath) -> String
-    func getSelectedCategory(at indexPath: IndexPath) -> Category?
-    func updateModel(at indexPath: IndexPath)
-    func addCategory(newCategoryName: String)
-}
-
 final class CategoryViewModel {
     weak var view: CategoryViewInterface?
     
